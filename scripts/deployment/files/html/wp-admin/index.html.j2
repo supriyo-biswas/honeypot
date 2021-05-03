@@ -1,0 +1,6 @@
+{{
+  response.redirect(
+    'http://' ~ request.headers.host ~ '/wp-login.php?redirect_to=' ~
+    urlencode('http://' ~ request.headers.host ~ '/wp-admin/') ~ '&reauth=1'
+  )
+}}

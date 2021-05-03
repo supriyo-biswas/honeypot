@@ -1,0 +1,8 @@
+/data
+/venv
+/.vagrant
+/.vscode
+__pycache__
+*.log
+*.py[co]
+hosts

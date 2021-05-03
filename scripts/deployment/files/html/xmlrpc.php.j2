@@ -1,0 +1,38 @@
+{% if '?rsd' in request.uri %}
+<?xml version="1.0" encoding="UTF-8"?><rsd version="1.0" xmlns="http://archipelago.phrasewise.com/rsd">
+	<service>
+		<engineName>WordPress</engineName>
+		<engineLink>https://wordpress.org/</engineLink>
+		<homePageLink>http://{{ request.headers.host }}</homePageLink>
+		<apis>
+			<api name="WordPress" blogID="1" preferred="true" apiLink="http://{{ request.headers.host }}/xmlrpc.php" />
+			<api name="Movable Type" blogID="1" preferred="false" apiLink="http://{{ request.headers.host }}/xmlrpc.php" />
+			<api name="MetaWeblog" blogID="1" preferred="false" apiLink="http://{{ request.headers.host }}/xmlrpc.php" />
+			<api name="Blogger" blogID="1" preferred="false" apiLink="http://{{ request.headers.host }}/xmlrpc.php" />
+				<api name="WP-API" blogID="1" preferred="false" apiLink="http://{{ request.headers.host }}/wp-json/" />
+			</apis>
+	</service>
+</rsd>
+{% elif request.method == 'GET' %}
+{{ response.set_header('Allow', 'POST') }}
+{{ response.set_header('Content-Length', 'text/plain') }}
+XML-RPC server accepts POST requests only.
+{% else %}
+<?xml version="1.0" encoding="UTF-8"?>
+<methodResponse>
+  <fault>
+    <value>
+      <struct>
+        <member>
+          <name>faultCode</name>
+          <value><int>-32700</int></value>
+        </member>
+        <member>
+          <name>faultString</name>
+          <value><string>parse error. not well formed</string></value>
+        </member>
+      </struct>
+    </value>
+  </fault>
+</methodResponse>
+{% endif %}

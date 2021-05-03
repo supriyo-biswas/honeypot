@@ -1,0 +1,11 @@
+[Unit]
+Description=Persist iptables rules
+
+[Service]
+Type=oneshot
+RemainAfterExit=true
+ExecStop=/usr/local/bin/iptables-persistent save
+ExecStart=/usr/local/bin/iptables-persistent restore
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,21 @@
+[Unit]
+Description=honeypot service
+After=network.target
+
+[Service]
+User=honeypot
+Group=honeypot
+WorkingDirectory=/opt/honeypot
+ExecStart=/opt/honeypot/venv/bin/python src/main.py --config data/config.json run 3000
+NoNewPrivileges=true
+PrivateDevices=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+ReadWritePaths=/opt/honeypot/data/logs
+
+[Install]
+WantedBy=multi-user.target

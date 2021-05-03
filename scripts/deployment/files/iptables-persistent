@@ -1,0 +1,19 @@
+#!/bin/sh
+case "$1" in
+    save)
+        iptables-save > /etc/iptables.rules
+        ip6tables-save > /etc/ip6tables.rules
+        ;;
+    restore)
+        if [ -e /etc/iptables.rules ]; then
+                iptables-restore < /etc/iptables.rules
+        fi
+        if [ -e /etc/ip6tables.rules ]; then
+                ip6tables-restore < /etc/ip6tables.rules
+        fi
+        ;;
+    *)
+        echo "Invalid command"
+        exit 1
+        ;;
+esac

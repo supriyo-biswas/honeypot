@@ -1,0 +1,6 @@
+{{
+  response.redirect(
+    'http://' ~ request.headers.host ~ '/owa/auth/logon.aspx?url=' ~
+    urlencode('http://' ~ request.headers.host ~ '/owa/&reason=0')
+  )
+}}

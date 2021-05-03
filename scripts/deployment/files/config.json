@@ -1,0 +1,60 @@
+{
+    "logging": {
+        "directory": "/opt/honeypot/data/logs",
+        "rotate": 86400,
+        "keep": 10
+    },
+    "tls": {
+        "keyfile": "/opt/honeypot/data/certs/key.pem",
+        "certfile": "/opt/honeypot/data/certs/cert.pem"
+    },
+    "protocols": {
+        "http": {
+            "root": "/opt/honeypot/data/html",
+            "index_exts": [
+                "php",
+                "cgi",
+                "html",
+                "xml",
+                "json"
+            ]
+        },
+        "ssh": {
+            "key": {
+                "rsa": "/opt/honeypot/data/ssh/host_rsa",
+                "ecdsa": "/opt/honeypot/data/ssh/host_ecdsa",
+                "ed25519": "/opt/honeypot/data/ssh/host_ed25519"
+            },
+            "auth": [
+                {
+                    "password": "/honey|fuck|shit|gotcha|badpass/i",
+                    "should": "deny"
+                },
+                {
+                    "username": "/honey|fuck|shit|gotcha|badpass/i",
+                    "should": "deny"
+                },
+                {
+                    "password": "/^[ -~]{3,12}$/",
+                    "should": "allow"
+                }
+            ]
+        },
+        "telnet": {
+            "auth": [
+                {
+                    "password": "/honey|fuck|shit|gotcha|badpass/i",
+                    "should": "deny"
+                },
+                {
+                    "username": "/honey|fuck|shit|gotcha|badpass/i",
+                    "should": "deny"
+                },
+                {
+                    "password": "/^[ -~]{3,12}$/",
+                    "should": "allow"
+                }
+            ]
+        }
+    }
+}

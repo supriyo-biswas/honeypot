@@ -18,7 +18,7 @@ Data sent through any other unknown protocol is logged as-is.
 Although the honeypot can be run on any Linux system, the instructions
 provided are only for Ubuntu 20.04. The steps below also take care of SSL
 version issues by providing a packaged version of Python 3.8 that supports TLS
-1.0 to 1.3. It also deploys a fake webpages for Wordpress, phpmyadmin and
+1.0 to 1.3. It also deploys fake webpages for Wordpress, phpmyadmin and
 Outlook web in order to lure attackers.
 
 * Ensure that your honeypot nodes have sshd configured to listen on a high

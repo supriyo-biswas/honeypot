@@ -1,4 +1,5 @@
 __all__ = (
+    'ExitCmdlineLoop',
     'Logger',
     'ShellLogger',
     'clean_path',
@@ -157,6 +158,10 @@ class ShellLogger:
         return method
 
 
+class ExitCmdlineLoop(Exception):
+    pass
+
+
 def clean_path(path):
     parts = []
     for part in path.split('/'):
@@ -303,8 +308,16 @@ def run_cmdline_factory(send_handler, recv_handler):
                     _, write_fds, _ = select.select([], [w_stdin], [], 0)
                     if write_fds:
                         recv_handler(sock, w_stdin)
+        except ExitCmdlineLoop:
+            pass
         finally:
-            subprocess.run(['docker', 'rm', '-f', name], check=False)
+            if process.poll() is None:
+                subprocess.run(
+                    ['docker', 'rm', '-f', name],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                )
+
             for fd in [r_stdin, w_stdin, r_stdout, w_stdout, r_stderr, w_stderr]:
                 os.close(fd)
 

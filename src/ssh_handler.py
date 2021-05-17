@@ -36,6 +36,9 @@ def send_handler(sock, fd):
 
 def recv_handler(sock, fd):
     data = sock.recv(1024)
+    if not data:
+        raise ExitCmdlineLoop()
+
     os.write(fd, data.replace(b'\r', b'\n'))
     sock.send(data.replace(b'\r', b'\r\n'))
 

@@ -37,7 +37,11 @@ def send_handler(sock, fd):
 
 
 def recv_handler(sock, fd):
-    os.write(fd, telnet_readline(sock).replace(b'\r\n', b'\n'))
+    data = telnet_readline(sock)
+    if not data:
+        raise ExitCmdlineLoop()
+
+    os.write(fd, data.replace(b'\r\n', b'\n'))
 
 
 run_cmdline = run_cmdline_factory(send_handler, recv_handler)

@@ -5,8 +5,6 @@ import re
 import select
 import socket
 import socketserver
-import ssl
-import struct
 import sys
 
 from argparse import ArgumentParser

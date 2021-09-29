@@ -237,7 +237,7 @@ def get_original_dest(sock):
 
 
 def is_valid_username(username):
-    return re.match('[a-z][a-z0-9-_]+', username, re.I)
+    return re.match('[a-z][a-z0-9-_]+$', username, re.I)
 
 
 def get_shell_command(user):
@@ -272,10 +272,10 @@ def run_cmdline_factory(send_handler, recv_handler):
             '--network', 'none',
             '--name', name,
             '--mount', 'type=tmpfs,destination=/tmp,tmpfs-size=32M',
-            '--cpus', config.get('cpu', '0.05'),
-            '--memory', config.get('memory', '16m'),
-            '--pids-limit', config.get('max_processes', '20'),
-            config.get('image', 'alpine:latest')
+            '--cpus', config.get('shell.cpu', '0.05'),
+            '--memory', config.get('shell.memory', '16m'),
+            '--pids-limit', config.get('shell.max_processes', '20'),
+            config.get('shell.image', 'alpine:latest')
         ]
         # fmt:on
 

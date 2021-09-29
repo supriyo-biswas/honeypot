@@ -9,7 +9,6 @@ import threading
 import time
 import traceback
 
-from munch import munchify
 from httpcore import Response
 from utils import *
 
@@ -46,10 +45,10 @@ def recv_handler(sock, fd):
 run_cmdline = run_cmdline_factory(send_handler, recv_handler)
 
 
-def run_shell(channel, dport, username, shell_config, logger):
+def run_shell(channel, dport, username, config, logger):
     shell_command = get_shell_command(username)
     with ShellLogger(channel, logger, dport, username) as chan:
-        run_cmdline(chan, shell_config, shell_command)
+        run_cmdline(chan, config, shell_command)
 
 
 class SFTPServer(paramiko.BaseSFTP, paramiko.SubsystemHandler):
@@ -181,7 +180,7 @@ class SFTPServer(paramiko.BaseSFTP, paramiko.SubsystemHandler):
                     self.send_status(req_num, paramiko.SFTP_OP_UNSUPPORTED)
             except EOFError:
                 return
-            except Exception as e:
+            except Exception:
                 traceback.print_exc()
                 return
 
@@ -202,7 +201,9 @@ class Server(paramiko.ServerInterface):
 
     def check_auth_password(self, username, password):
         allow = is_valid_username(username) and match_rules(
-            self.config.get('auth', []), username=username, password=password
+            self.config.get('protocols.ssh.auth_rules', []),
+            username=username,
+            password=password,
         )
 
         self.log_event(username=username, password=password, allow=allow)
@@ -235,7 +236,7 @@ class Server(paramiko.ServerInterface):
                 channel,
                 self.dport,
                 self.transport.get_username(),
-                self.config.shell,
+                self.config,
                 self.logger,
             ),
         )
@@ -247,12 +248,7 @@ class Server(paramiko.ServerInterface):
         self.log_event(username=username, exec_cmd=command)
 
         run_thread(
-            run_cmdline,
-            (
-                channel,
-                self.config.shell,
-                get_exec_command(username, command),
-            ),
+            run_cmdline, (channel, self.config, get_exec_command(username, command))
         )
         return True
 
@@ -279,22 +275,24 @@ class Server(paramiko.ServerInterface):
         return paramiko.OPEN_SUCCEEDED
 
 
-def main(sock, dport, logger, config, **kwargs):
-    ssh_config = munchify({'shell': config.get('shell', {}), **config.protocols.ssh})
-
+def main(sock, dport, logger, config):
     transport = paramiko.Transport(sock)
-    transport.local_version = 'SSH-2.0-%s' % ssh_config.get('banner', 'OpenSSH-7.8p1')
+    transport.local_version = 'SSH-2.0-%s' % config.get(
+        'protocols.ssh.banner', 'OpenSSH-7.8p1'
+    )
 
-    for key, value in ssh_config.key.items():
-        if key == 'dsa':
-            transport.add_server_key(paramiko.DSSKey(filename=value))
-        elif key == 'rsa':
-            transport.add_server_key(paramiko.RSAKey(filename=value))
-        elif key == 'ecdsa':
-            transport.add_server_key(paramiko.ECDSAKey(filename=value))
-        elif key == 'ed25519':
-            transport.add_server_key(paramiko.Ed25519Key(filename=value))
+    key_types = {
+        'dsa': paramiko.DSSKey,
+        'rsa': paramiko.RSAKey,
+        'ecdsa': paramiko.ECDSAKey,
+        'ed25519': paramiko.Ed25519Key,
+    }
 
-    server = Server(dport, transport, logger, ssh_config)
+    for name, _class in key_types.items():
+        pref = 'protocols.ssh.key.%s' % name
+        if pref in config:
+            transport.add_server_key(_class(filename=config[pref]))
+
+    server = Server(dport, transport, logger, config)
     transport.start_server(server=server)
     transport.join()

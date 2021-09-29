@@ -22,11 +22,7 @@ def main(sock, dport, logger, config):
     rcpt_to = []
     data = []
 
-    try:
-        hostname = config.protocols.smtp.hostname.encode()
-    except AttributeError:
-        hostname = b'localhost'
-
+    hostname = config.get('protocols.smtp.hostname', 'localhost').encode()
     sock.send(b'220 %s ESMTP server ready\r\n' % hostname)
 
     while True:
@@ -149,7 +145,9 @@ def main(sock, dport, logger, config):
             data.clear()
 
             sock.send(b'220 Ready to start TLS\r\n')
-            sock = ssl.wrap_socket(sock, config.tls.keyfile, config.tls.certfile, True)
+            sock = ssl.wrap_socket(
+                sock, config['tls.keyfile'], config['tls.certfile'], True
+            )
 
         else:
             sock.send(b'502 Command not implemented\r\n')

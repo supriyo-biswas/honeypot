@@ -1,15 +1,11 @@
-import httpcore
-import mimetypes
 import os
-import re
-import time
 import utils
 
 from http import HTTPStatus
 from httpcore import *
 
 
-def add_default_headers(request, response):
+def add_default_headers(response):
     if not response.headers.get('Server'):
         response.headers['Server'] = 'nginx'
 
@@ -49,7 +45,8 @@ def http_request_handler(request, config):
     if request.path[0] != '/':
         raise BadRequest()
 
-    path = '%s/%s' % (config.root.rstrip('/'), utils.clean_path(request.path))
+    webroot = config['protocols.http.root'].rstrip('/')
+    path = '%s/%s' % (webroot, utils.clean_path(request.path))
     if path.endswith('.j2'):
         raise FileNotFoundError()
 
@@ -57,13 +54,13 @@ def http_request_handler(request, config):
         if request.path[-1] != '/':
             return redirect(301, '%s/' % request.path)
 
-        index_exts = config.get('index_exts', ['php', 'cgi', 'html', 'xml'])
-        for ext in index_exts:
+        exts = config.get('protocols.http.index_exts', ['php', 'cgi', 'html', 'xml'])
+        for ext in exts:
             index_file = '%s/index.%s' % (path, ext)
             if os.path.isfile(index_file):
                 return FileResponse(index_file)
 
-        for ext in index_exts:
+        for ext in exts:
             template_file = '%s/index.%s.j2' % (path, ext)
             if os.path.isfile(template_file):
                 return TemplateResponse(template_file)
@@ -89,8 +86,8 @@ def main(sock, dport, logger, config):
             request = Request.from_socket(sock)
             keep_alive = request.keep_alive
 
-            response = http_request_handler(request, config.protocols.http)
-            add_default_headers(request, response)
+            response = http_request_handler(request, config)
+            add_default_headers(response)
 
             response.send(sock, request)
             response.close()
@@ -110,7 +107,7 @@ def main(sock, dport, logger, config):
         finally:
             # an error response will have not been sent yet
             if response is not None and not response.sent:
-                add_default_headers(request, response)
+                add_default_headers(response)
                 response.headers['connection'] = 'close'
                 response.send(sock, request)
 

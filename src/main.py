@@ -8,7 +8,6 @@ import socketserver
 import sys
 
 from argparse import ArgumentParser
-from munch import munchify, Munch
 from utils import get_original_dest, Logger
 
 supported_protocols = ['http', 'https', 'telnet', 'ssh', 'smtp', 'hexdump']
@@ -21,22 +20,21 @@ class Server(socketserver.ThreadingMixIn, socketserver.TCPServer):
 
 def get_config(path):
     with open(path or 'config.json') as f:
-        return munchify(json.load(f))
+        return json.load(f)
 
 
 def run_honeypot(args):
     config = get_config(args.config)
-    loggers = Munch()
-    for protocol in supported_protocols:
-        loggers[protocol] = Logger(
-            '%s/%s.jsonl' % (config.logging.directory, protocol),
-            config.logging.rotate,
-            config.logging.keep,
-        )
+    loggers = {}
+    handlers = {}
 
-    handlers = Munch()
     for protocol in supported_protocols:
         handlers[protocol] = __import__('%s_handler' % protocol).main
+        loggers[protocol] = Logger(
+            '%s/%s.jsonl' % (config['logging.dir'], protocol),
+            config['logging.rotate'],
+            config['logging.keep'],
+        )
 
     class ConnectionHandler(socketserver.BaseRequestHandler):
         def handle(self):
@@ -45,25 +43,25 @@ def run_honeypot(args):
 
             try:
                 if port == 22:
-                    handlers.ssh(sock, port, loggers.ssh, config)
+                    handlers['ssh'](sock, port, loggers['ssh'], config)
                 elif port == 23:
-                    handlers.telnet(sock, port, loggers.telnet, config)
+                    handlers['telnet'](sock, port, loggers['telnet'], config)
                 elif port in [25, 587]:
-                    handlers.smtp(sock, port, loggers.smtp, config)
+                    handlers['smtp'](sock, port, loggers['smtp'], config)
                 elif port in [80, 8080]:
-                    handlers.http(sock, port, loggers.http, config)
+                    handlers['http'](sock, port, loggers['http'], config)
                 elif port in [443, 8443]:
-                    handlers.https(sock, port, loggers.https, config)
+                    handlers['https'](sock, port, loggers['https'], config)
                 else:
                     rlist, _, _ = select.select([sock], [], [], 15)
                     if rlist:
                         data = sock.recv(2048, socket.MSG_PEEK)
                         if data.startswith(b'SSH-2.0-'):
-                            handlers.ssh(sock, port, loggers.ssh, config)
+                            handlers['ssh'](sock, port, loggers['ssh'], config)
                         elif re.match(rb'([a-z-]+)\s+(\S+)\s+HTTP/', data, re.I):
-                            handlers.http(sock, port, loggers.http, config)
+                            handlers['http'](sock, port, loggers['http'], config)
                         else:
-                            handlers.hexdump(sock, port, loggers.hexdump, config)
+                            handlers['hexdump'](sock, port, loggers['hexdump'], config)
             finally:
                 sock.close()
 
@@ -85,9 +83,9 @@ def test_handler(args):
     config = get_config(args.config)
     handler = __import__('%s_handler' % args.protocol).main
     logger = Logger(
-        '%s/%s.jsonl' % (config.logging.directory, args.protocol),
-        config.logging.rotate,
-        config.logging.keep,
+        '%s/%s.jsonl' % (config['logging.dir'], args.protocol),
+        config['logging.rotate'],
+        config['logging.keep'],
     )
 
     class ConnectionHandler(socketserver.BaseRequestHandler):

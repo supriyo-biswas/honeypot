@@ -1,60 +1,46 @@
 {
-    "logging": {
-        "directory": "/opt/honeypot/data/logs",
-        "rotate": 86400,
-        "keep": 10
-    },
-    "tls": {
-        "keyfile": "/opt/honeypot/data/certs/key.pem",
-        "certfile": "/opt/honeypot/data/certs/cert.pem"
-    },
-    "protocols": {
-        "http": {
-            "root": "/opt/honeypot/data/html",
-            "index_exts": [
-                "php",
-                "cgi",
-                "html",
-                "xml",
-                "json"
-            ]
+    "logging.dir": "/opt/honeypot/data/logs",
+    "logging.rotate": 86400,
+    "logging.keep": 10,
+    "tls.keyfile": "/opt/honeypot/data/certs/key.pem",
+    "tls.certfile": "/opt/honeypot/data/certs/cert.pem",
+    "protocols.http.root": "/opt/honeypot/data/html",
+    "protocols.http.index_exts": [
+        "php",
+        "cgi",
+        "html",
+        "xml",
+        "json"
+    ],
+    "protocols.ssh.key.rsa": "/opt/honeypot/data/ssh/host_rsa",
+    "protocols.ssh.key.ecdsa": "/opt/honeypot/data/ssh/host_ecdsa",
+    "protocols.ssh.key.ed25519": "/opt/honeypot/data/ssh/host_ed25519",
+    "protocols.ssh.auth_rules": [
+        {
+            "password": "/honey|fuck|shit|gotcha|badpass/i",
+            "should": "deny"
         },
-        "ssh": {
-            "key": {
-                "rsa": "/opt/honeypot/data/ssh/host_rsa",
-                "ecdsa": "/opt/honeypot/data/ssh/host_ecdsa",
-                "ed25519": "/opt/honeypot/data/ssh/host_ed25519"
-            },
-            "auth": [
-                {
-                    "password": "/honey|fuck|shit|gotcha|badpass/i",
-                    "should": "deny"
-                },
-                {
-                    "username": "/honey|fuck|shit|gotcha|badpass/i",
-                    "should": "deny"
-                },
-                {
-                    "password": "/^[ -~]{3,12}$/",
-                    "should": "allow"
-                }
-            ]
+        {
+            "username": "/honey|fuck|shit|gotcha|badpass/i",
+            "should": "deny"
         },
-        "telnet": {
-            "auth": [
-                {
-                    "password": "/honey|fuck|shit|gotcha|badpass/i",
-                    "should": "deny"
-                },
-                {
-                    "username": "/honey|fuck|shit|gotcha|badpass/i",
-                    "should": "deny"
-                },
-                {
-                    "password": "/^[ -~]{3,12}$/",
-                    "should": "allow"
-                }
-            ]
+        {
+            "password": "/^[ -~]{3,12}$/",
+            "should": "allow"
         }
-    }
+    ],
+    "protocols.telnet.auth_rules": [
+        {
+            "password": "/honey|fuck|shit|gotcha|badpass/i",
+            "should": "deny"
+        },
+        {
+            "username": "/honey|fuck|shit|gotcha|badpass/i",
+            "should": "deny"
+        },
+        {
+            "password": "/^[ -~]{3,12}$/",
+            "should": "allow"
+        }
+    ]
 }

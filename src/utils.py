@@ -272,9 +272,9 @@ def run_cmdline_factory(send_handler, recv_handler):
             '--network', 'none',
             '--name', name,
             '--mount', 'type=tmpfs,destination=/tmp,tmpfs-size=32M',
-            '--cpus', config.get('shell.cpu', '0.05'),
-            '--memory', config.get('shell.memory', '16m'),
-            '--pids-limit', config.get('shell.max_processes', '20'),
+            '--cpus', str(config.get('shell.cpu', 0.05)),
+            '--memory', '%sm' % config.get('shell.memory', 16),
+            '--pids-limit', str(config.get('shell.max_processes', 20)),
             config.get('shell.image', 'alpine:latest')
         ]
         # fmt:on

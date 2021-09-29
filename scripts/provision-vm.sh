@@ -8,7 +8,7 @@ echo '{"userns-remap":"default"}' > /etc/docker/daemon.json
 
 apt-get update
 apt-get upgrade -y
-apt-get install -y build-essential curl gnutls-bin docker.io ripgrep ansible
+apt-get install -y build-essential curl gnutls-bin docker.io ripgrep ansible python3-venv
 
 adduser vagrant docker
 docker pull alpine:latest

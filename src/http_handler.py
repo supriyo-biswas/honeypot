@@ -41,7 +41,7 @@ def redirect(status, location):
     return response
 
 
-def http_request_handler(request, config):
+def serve_file_handler(request, config):
     if request.path[0] != '/':
         raise BadRequest()
 
@@ -84,13 +84,24 @@ def main(sock, dport, logger, config):
 
         try:
             request = Request.from_socket(sock)
-            keep_alive = request.keep_alive
+            simple_proxy = request.uri.startswith('http:')
+            connect_proxy = request.method == 'CONNECT'
+            keep_alive = request.keep_alive and not (simple_proxy or connect_proxy)
 
-            response = http_request_handler(request, config)
+            if simple_proxy:
+                server_ip = utils.get_original_dest(sock)[0]
+                response = Response(200, server_ip)
+            elif connect_proxy:
+                response = Response(200)
+            else:
+                response = serve_file_handler(request, config)
+
             add_default_headers(response)
-
             response.send(sock, request)
             response.close()
+            if connect_proxy:
+                request.body = sock.recv(1024)
+
             continue
         except RequestNotReceived:
             break

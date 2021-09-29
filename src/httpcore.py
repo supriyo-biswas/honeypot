@@ -119,7 +119,7 @@ class Request:
         if content_type in ['', 'application/x-www-form-urlencoded']:
             return create_multidict(parse_qs(self.body.decode('latin-1')))
 
-        return create_multidict(self.body.decode('latin-1'))
+        return create_multidict()
 
     @property
     def json(self):

@@ -177,12 +177,12 @@ class Request:
                 break
 
             if not request.add_header_from_line(line):
-                self.incomplete = True
+                request.incomplete = True
                 return request
 
             headers_size += len(line)
             if headers_size > headers_max_size:
-                self.incomplete = True
+                request.incomplete = True
                 return request
 
         content_length = min(request.content_length, body_max_size)
@@ -190,7 +190,7 @@ class Request:
             data = socket.recv(content_length)
             if not data:
                 if content_length > 0:
-                    self.incomplete = True
+                    request.incomplete = True
                 break
 
             request.body.extend(data)

@@ -57,10 +57,10 @@ def run_honeypot(args):
                 else:
                     rlist, _, _ = select.select([sock], [], [], 15)
                     if rlist:
-                        data = sock.recv(10, socket.MSG_PEEK)
+                        data = sock.recv(2048, socket.MSG_PEEK)
                         if data.startswith(b'SSH-2.0-'):
                             handlers.ssh(sock, port, loggers.ssh, config)
-                        elif re.match(b'(GET|OPTIONS|POST|HEAD|CONNECT) ', data, re.I):
+                        elif re.match(rb'([a-z-]+)\s+(\S+)\s+HTTP/', data, re.I):
                             handlers.http(sock, port, loggers.http, config)
                         else:
                             handlers.hexdump(sock, port, loggers.hexdump, config)

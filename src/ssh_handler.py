@@ -9,7 +9,7 @@ import threading
 import time
 import traceback
 
-from httpcore import Response
+from httpcore import Response, REQUEST_LINE_PATTERN
 from utils import *
 
 
@@ -259,7 +259,7 @@ class Server(paramiko.ServerInterface):
                 return
 
             data = channel.recv(1024)
-            if re.match(rb'[A-Z]+ [^ ]+ HTTP/', data, re.I):
+            if re.match(REQUEST_LINE_PATTERN, data, re.I):
                 server_ip = get_original_dest(self.transport.sock)[0]
                 Response(200, server_ip).send(channel, None)
 

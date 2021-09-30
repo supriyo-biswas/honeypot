@@ -8,6 +8,7 @@ import socketserver
 import sys
 
 from argparse import ArgumentParser
+from httpcore import REQUEST_LINE_PATTERN
 from utils import get_original_dest, Logger
 
 supported_protocols = ['http', 'https', 'telnet', 'ssh', 'smtp', 'hexdump']
@@ -58,7 +59,7 @@ def run_honeypot(args):
                         data = sock.recv(2048, socket.MSG_PEEK)
                         if data.startswith(b'SSH-2.0-'):
                             handlers['ssh'](sock, port, loggers['ssh'], config)
-                        elif re.match(rb'([a-z-]+)\s+(\S+)\s+HTTP/', data, re.I):
+                        elif re.match(REQUEST_LINE_PATTERN, data, re.I):
                             handlers['http'](sock, port, loggers['http'], config)
                         else:
                             handlers['hexdump'](sock, port, loggers['hexdump'], config)

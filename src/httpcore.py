@@ -4,6 +4,7 @@ __all__ = (
     'HTTPError',
     'InvalidRequestLine',
     'NotModified',
+    'REQUEST_LINE_PATTERN',
     'Request',
     'RequestNotReceived',
     'RequestedRangeNotSatisfiable',
@@ -25,6 +26,7 @@ from urllib.parse import parse_qs, quote_plus, unquote
 from utils import readline
 
 HTTP_DATE_FORMAT = '%a, %d %b %Y %H:%M:%S GMT'
+REQUEST_LINE_PATTERN = rb'([a-z-]+)\s+(\S+)\s+HTTP/([\d.]+)'
 
 
 def guess_mimetype(path):
@@ -150,7 +152,7 @@ class Request:
         return result
 
     def from_request_line(line):
-        match = re.match(rb'([a-z-]+)\s+(\S+)\s+HTTP/([\d.]+)', line, re.I)
+        match = re.match(REQUEST_LINE_PATTERN, line, re.I)
         if not match:
             raise InvalidRequestLine(line)
 

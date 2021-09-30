@@ -22,7 +22,8 @@ def main(sock, dport, logger, config):
     rcpt_to = []
     data = []
 
-    hostname = config.get('protocols.smtp.hostname', 'localhost').encode()
+    server_ip, _ = utils.get_original_dest(sock)
+    hostname = config.get('protocols.smtp.hostname', server_ip).encode()
     sock.send(b'220 %s ESMTP server ready\r\n' % hostname)
 
     while True:

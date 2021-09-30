@@ -87,7 +87,7 @@ class Logger:
             while len(self._files) > self._keep:
                 try:
                     os.remove(self._files.pop())
-                except OSError as e:
+                except OSError:
                     pass
 
             self._fp = open(self._path, 'a+')
@@ -203,30 +203,28 @@ def match_rules(rules, **kwargs):
 
 
 def readline(sock, delim=b'\n', max_length=2048):
+    data = bytearray()
     if type(sock) == socket.socket:
-        while True:
+        while len(data) < max_length:
             select.select([sock], [], [])
-            data = sock.recv(max_length, socket.MSG_PEEK)
-            if not data:
-                return data
+            rcvd = sock.recv(max_length, socket.MSG_PEEK)
+            if not rcvd:
+                break
 
-            if len(data) == max_length:
-                return sock.recv(max_length)
-
-            index = data.find(delim)
-            if index != -1:
-                return sock.recv(index + len(delim))
-
+            index = rcvd.find(delim)
+            if index == -1:
+                data.extend(sock.recv(max_length - len(data)))
+            else:
+                data.extend(sock.recv(index + len(delim)))
+                break
     else:
-        data = bytearray()
-        while True:
-            char = sock.recv(1)
-            if not char:
-                return bytes(data)
+        while len(data) < max_length and not data.endswith(delim):
+            rcvd = sock.recv(1)
+            data.extend(rcvd)
+            if not rcvd:
+                break
 
-            data.extend(char)
-            if char.endswith(delim) or len(data) > max_length:
-                return bytes(data)
+    return bytes(data)
 
 
 def get_original_dest(sock):
@@ -237,7 +235,7 @@ def get_original_dest(sock):
 
 
 def is_valid_username(username):
-    return re.match('[a-z][a-z0-9-_]+$', username, re.I)
+    return bool(re.match('[a-z][a-z0-9-_]+$', username, re.I))
 
 
 def get_shell_command(user):

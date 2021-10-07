@@ -1,7 +1,7 @@
 {
     "logging.dir": "/opt/honeypot/data/logs",
     "logging.rotate": 86400,
-    "logging.keep": 10,
+    "logging.keep": 30,
     "tls.keyfile": "/opt/honeypot/data/certs/key.pem",
     "tls.certfile": "/opt/honeypot/data/certs/cert.pem",
     "protocols.http.root": "/opt/honeypot/data/html",

@@ -165,7 +165,7 @@ class ExitCmdlineLoop(Exception):
 def clean_path(path):
     parts = []
     for part in path.split('/'):
-        if part == '..' and part:
+        if part == '..' and len(parts) > 0:
             parts.pop()
         elif part in ['', '.']:
             pass

@@ -49,9 +49,9 @@ def run_honeypot(args):
                     handlers['telnet'](sock, port, loggers['telnet'], config)
                 elif port in [25, 587]:
                     handlers['smtp'](sock, port, loggers['smtp'], config)
-                elif port in [80, 8080]:
+                elif port == 80:
                     handlers['http'](sock, port, loggers['http'], config)
-                elif port in [443, 8443]:
+                elif port in [443, 9200, 10443]:
                     handlers['https'](sock, port, loggers['https'], config)
                 else:
                     rlist, _, _ = select.select([sock], [], [], 15)

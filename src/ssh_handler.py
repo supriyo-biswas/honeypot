@@ -3,8 +3,6 @@ import paramiko
 import paramiko.sftp as sftp
 import re
 import secrets
-import select
-import socket
 import threading
 import time
 import traceback

@@ -3,6 +3,8 @@ import re
 
 from utils import *
 
+handled_ports = [23]
+
 
 def telnet_readline(sock, strip_newlines=False):
     line = readline(sock)

@@ -2,6 +2,8 @@ import re
 import socket
 import ssl
 
+handled_ports = '*'
+
 
 def main(sock, dport, logger, config):
     ip = sock.getpeername()[0]

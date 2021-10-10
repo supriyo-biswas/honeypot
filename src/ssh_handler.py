@@ -7,8 +7,11 @@ import threading
 import time
 import traceback
 
-from httpcore import Response, REQUEST_LINE_PATTERN
+from httpcore import Response, request_line_pattern
 from utils import *
+
+handled_ports = [22]
+protocol_matcher = re.compile(b'SSH-2.0-')
 
 
 def get_channel(transport, chanid):
@@ -257,7 +260,7 @@ class Server(paramiko.ServerInterface):
                 return
 
             data = channel.recv(1024)
-            if re.match(REQUEST_LINE_PATTERN, data, re.I):
+            if request_line_pattern.match(data):
                 server_ip = get_original_dest(self.transport.sock)[0]
                 Response(200, server_ip).send(channel, None)
 

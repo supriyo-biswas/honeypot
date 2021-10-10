@@ -1,15 +1,11 @@
 #!/usr/bin/env python3
 
 import json
-import re
-import select
-import socket
 import socketserver
 import sys
 
 from argparse import ArgumentParser
-from httpcore import REQUEST_LINE_PATTERN
-from utils import get_original_dest, Logger
+from utils import get_original_dest, dispatch_protocol, Logger
 
 supported_protocols = ['http', 'https', 'telnet', 'ssh', 'smtp', 'hexdump']
 
@@ -28,41 +24,32 @@ def run_honeypot(args):
     config = get_config(args.config)
     loggers = {}
     handlers = {}
+    ports = {}
+    matchers = {}
 
     for protocol in supported_protocols:
-        handlers[protocol] = __import__('%s_handler' % protocol).main
+        module = __import__('%s_handler' % protocol)
+        handlers[protocol] = module.main
         loggers[protocol] = Logger(
             '%s/%s.jsonl' % (config['logging.dir'], protocol),
             config['logging.rotate'],
             config['logging.keep'],
         )
 
+        protocol_matcher = getattr(module, 'protocol_matcher', None)
+        if protocol_matcher:
+            matchers[protocol_matcher] = protocol
+        for port in module.handled_ports:
+            ports[port] = protocol
+
     class ConnectionHandler(socketserver.BaseRequestHandler):
         def handle(self):
             sock = self.request
-            _, port = get_original_dest(sock)
-
+            _, dport = get_original_dest(sock)
             try:
-                if port == 22:
-                    handlers['ssh'](sock, port, loggers['ssh'], config)
-                elif port == 23:
-                    handlers['telnet'](sock, port, loggers['telnet'], config)
-                elif port in [25, 587]:
-                    handlers['smtp'](sock, port, loggers['smtp'], config)
-                elif port == 80:
-                    handlers['http'](sock, port, loggers['http'], config)
-                elif port in [443, 9200, 10443]:
-                    handlers['https'](sock, port, loggers['https'], config)
-                else:
-                    rlist, _, _ = select.select([sock], [], [], 15)
-                    if rlist:
-                        data = sock.recv(2048, socket.MSG_PEEK)
-                        if data.startswith(b'SSH-2.0-'):
-                            handlers['ssh'](sock, port, loggers['ssh'], config)
-                        elif re.match(REQUEST_LINE_PATTERN, data, re.I):
-                            handlers['http'](sock, port, loggers['http'], config)
-                        else:
-                            handlers['hexdump'](sock, port, loggers['hexdump'], config)
+                protocol = dispatch_protocol(sock, dport, ports, matchers)
+                if protocol is not None:
+                    handlers[protocol](sock, dport, loggers[protocol], config)
             finally:
                 sock.close()
 

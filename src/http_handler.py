@@ -4,6 +4,9 @@ import utils
 from http import HTTPStatus
 from httpcore import *
 
+handled_ports = [80]
+protocol_matcher = request_line_pattern
+
 
 def add_default_headers(response):
     if not response.headers.get('Server'):

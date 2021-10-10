@@ -5,6 +5,7 @@ __all__ = (
     'clean_path',
     'get_exec_command',
     'get_original_dest',
+    'dispatch_protocol',
     'get_shell_command',
     'is_valid_username',
     'match_rules',
@@ -160,6 +161,22 @@ class ShellLogger:
 
 class ExitCmdlineLoop(Exception):
     pass
+
+
+def dispatch_protocol(sock, dport, ports, matchers={}):
+    for port, handler in ports.items():
+        if dport == port:
+            return handler
+
+    if matchers:
+        rlist, _, _ = select.select([sock], [], [], 10)
+        if rlist:
+            data = sock.recv(2048, socket.MSG_PEEK)
+            for matcher, handler in matchers.items():
+                if matcher.match(data):
+                    return handler
+
+    return ports.get('*')
 
 
 def clean_path(path):

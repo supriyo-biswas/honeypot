@@ -2,6 +2,8 @@ import re
 import ssl
 import utils
 
+handled_ports = [25, 587]
+
 
 def parse_command(cmd):
     result = []
@@ -100,9 +102,7 @@ def main(sock, dport, logger, config):
                 sock.send(b'503 Must issue HELO/EHLO first\r\n')
                 continue
 
-            if len(command) == 1 or not (
-                command[1].startswith(b'FROM:<') and command[1].endswith(b'>')
-            ):
+            if len(command) == 1 or not re.match(b'FROM:<.*>$', command[1]):
                 sock.send(b'501 Syntax error\r\n')
                 continue
 
@@ -114,9 +114,7 @@ def main(sock, dport, logger, config):
                 sock.send(b'503 Must issue HELO/EHLO first\r\n')
                 continue
 
-            if len(command) == 1 or not (
-                command[1].startswith(b'TO:<') and command[1].endswith(b'>')
-            ):
+            if len(command) == 1 or not re.match(b'TO:<.*>$', command[1]):
                 sock.send(b'501 Syntax error\r\n')
                 continue
 

@@ -1,4 +1,5 @@
 __all__ = (
+    'AssociatedDataLogger',
     'ExitCmdlineLoop',
     'Logger',
     'ShellLogger',
@@ -101,16 +102,27 @@ class Logger:
         self._lock.release()
 
 
-class ShellLogger:
-    __slots__ = '_sock', '_logger', '_recvbuf', '_ip', '_dport', '_user'
+class AssociatedDataLogger:
+    __slots__ = '_logger', '_data'
 
-    def __init__(self, sock, logger, dport, user):
-        self._sock = sock
+    def __init__(self, logger, data):
         self._logger = logger
+        self._data = data
+
+    def log(self, **kwargs):
+        self._logger.log(**self._data, **kwargs)
+
+
+class ShellLogger(AssociatedDataLogger):
+    __slots__ = '_sock', '_logger', '_recvbuf', '_recv_accepts_flags'
+
+    def __init__(self, sock, logger, dport, user, recv_accepts_flags=True):
+        self._sock = sock
         self._recvbuf = bytearray()
-        self._ip = sock.getpeername()[0]
-        self._dport = dport
-        self._user = user
+        self._recv_accepts_flags = recv_accepts_flags
+        super().__init__(
+            logger, {'ip': sock.getpeername()[0], 'dport': dport, 'username': user}
+        )
 
     def __enter__(self):
         return self
@@ -120,37 +132,29 @@ class ShellLogger:
 
     def flush(self):
         if self._recvbuf:
-            self._logger.log(
-                ip=self._ip, dport=self._dport, cmd=self._recvbuf.decode('latin-1')
-            )
+            self._logger.log(cmd=self._recvbuf.decode('latin-1'))
 
-    def recv(self, *args, **kwargs):
-        data = self._sock.recv(*args, **kwargs)
-        self._recvbuf.extend(data)
+    def recv(self, length, flags=0):
+        if self._recv_accepts_flags:
+            data = self._sock.recv(length, flags)
+        else:
+            data = self._sock.recv(length)
 
-        if self._recvbuf:
-            lines = list(filter(None, re.split(b'[\r\n]+', self._recvbuf)))
-            if self._recvbuf[-1] in [10, 13]:  # ends with \r or \n
-                for line in lines:
-                    self._logger.log(
-                        ip=self._ip,
-                        dport=self._dport,
-                        username=self._user,
-                        cmd=line.decode('latin-1'),
-                    )
+        # skip logging if the socket is only being peeked
+        if not self._recv_accepts_flags or (flags & socket.MSG_PEEK == 0):
+            self._recvbuf.extend(data)
+            if self._recvbuf:
+                lines = list(filter(None, re.split(b'[\r\n]+', self._recvbuf)))
+                if self._recvbuf[-1] in [10, 13]:  # ends with \r or \n
+                    for line in lines:
+                        super().log(cmd=line.decode('latin-1'))
+                    self._recvbuf.clear()
+                else:
+                    for i in range(len(lines) - 1):
+                        super().log(cmd=lines[i].decode('latin-1'))
 
-                self._recvbuf.clear()
-            else:
-                for i in range(1, len(lines) - 1):
-                    self._logger.log(
-                        ip=self._ip,
-                        dport=self._dport,
-                        username=self._user,
-                        cmd=lines[i].decode('latin-1'),
-                    )
-
-                self._recvbuf.clear()
-                self._recvbuf.extend(lines[-1])
+                    self._recvbuf.clear()
+                    self._recvbuf.extend(lines[-1])
 
         return data
 

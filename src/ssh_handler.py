@@ -48,7 +48,7 @@ run_cmdline = run_cmdline_factory(send_handler, recv_handler)
 
 def run_shell(channel, dport, username, config, logger):
     shell_command = get_shell_command(username)
-    with ShellLogger(channel, logger, dport, username) as chan:
+    with ShellLogger(channel, logger, dport, username, False) as chan:
         run_cmdline(chan, config, shell_command)
 
 

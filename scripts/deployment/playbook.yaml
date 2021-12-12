@@ -41,6 +41,7 @@
         name:
           - docker.io
           - openssl
+          - rsync
 
     - name: Remove python3.8 installation directory
       file:

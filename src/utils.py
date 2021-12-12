@@ -172,7 +172,7 @@ class PeekableSocket:
         self._ps_pending = bytearray()
 
     def wait_until_readable(self):
-        if not self.ps_pending:
+        if not self._ps_pending:
             select.select([self._sock], [], [])
 
     def recv(self, length, flags=0):

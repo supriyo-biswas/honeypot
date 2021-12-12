@@ -25,7 +25,7 @@ def main(sock, dport, logger, config):
 
     server_ip, _ = utils.get_original_dest(sock)
     hostname = config.get('protocols.smtp.hostname', server_ip).encode()
-    sock.send(b'220 %s ESMTP server ready\r\n' % hostname)
+    sock.send(b'220 %s ESMTP Postfix\r\n' % hostname)
 
     while True:
         line = utils.readline(sock)
@@ -76,15 +76,23 @@ def main(sock, dport, logger, config):
 
             helo_done = True
             sock.send(b'250-%s at your service\r\n' % hostname)
+            sock.send(b'250-STARTTLS\r\n')
+            sock.send(b'250-DSN\r\n')
+            sock.send(b'250-ETRN\r\n')
             sock.send(b'250-SMTPUTF8\r\n')
-            sock.send(b'250-8BITMIME\r\n')
-            sock.send(b'250 STARTTLS\r\n')
+            sock.send(b'250 8BITMIME\r\n')
+
+        elif command[0] == b'ETRN':
+            if len(command) != 2:
+                sock.send(b'501 Syntax error\r\n')
+            else:
+                sock.send(b'250 Queueing started\r\n')
 
         elif command[0] == b'HELP':
             sock.send(b'214 Refer https://tools.ietf.org/html/rfc5321\r\n')
 
         elif command[0] == b'QUIT':
-            sock.send(b'221 Closing connection\r\n')
+            sock.send(b'221 Bye\r\n')
             break
 
         elif command[0] == b'NOOP':

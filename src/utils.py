@@ -3,14 +3,15 @@ __all__ = (
     'Logger',
     'ShellLogger',
     'clean_path',
+    'dispatch_protocol',
     'get_exec_command',
     'get_original_dest',
-    'dispatch_protocol',
     'get_shell_command',
     'is_valid_username',
     'match_rules',
     'readline',
     'run_cmdline_factory',
+    'ssl_wrap',
 )
 
 import calendar
@@ -22,6 +23,7 @@ import re
 import secrets
 import select
 import socket
+import ssl
 import struct
 import subprocess
 import threading
@@ -159,6 +161,45 @@ class ShellLogger:
         return method
 
 
+class PeekableSocket:
+    __slots__ = '_sock', '_ps_pending'
+
+    def __init__(self, sock):
+        if type(sock) == socket.socket:
+            raise TypeError('socket.socket is already peekable')
+
+        self._sock = sock
+        self._ps_pending = bytearray()
+
+    def wait_until_readable(self):
+        if not self.ps_pending:
+            select.select([self._sock], [], [])
+
+    def recv(self, length, flags=0):
+        if flags != 0 and flags != socket.MSG_PEEK:
+            raise ValueError('only socket.MSG_PEEK flag is supported')
+
+        data = bytearray()
+        if self._ps_pending:
+            data.extend(self._ps_pending[:length])
+            if flags != socket.MSG_PEEK:
+                del self._ps_pending[:length]
+
+        if not data and length - len(data) > 0:
+            rcvd = self._sock.recv(length - len(data))
+            data.extend(rcvd)
+            if flags == socket.MSG_PEEK:
+                self._ps_pending.extend(rcvd)
+
+        return bytes(data)
+
+    def __getattr__(self, name):
+        def method(*args, **kwargs):
+            return getattr(self._sock, name)(*args, **kwargs)
+
+        return method
+
+
 class ExitCmdlineLoop(Exception):
     pass
 
@@ -219,26 +260,27 @@ def match_rules(rules, **kwargs):
     return False
 
 
+def ssl_wrap(sock, keyfile, certfile):
+    return PeekableSocket(ssl.wrap_socket(sock, keyfile, certfile, True))
+
+
 def readline(sock, delim=b'\n', max_length=2048):
     data = bytearray()
-    if type(sock) == socket.socket:
-        while len(data) < max_length:
+    should_use_select = not isinstance(sock, PeekableSocket)
+    while len(data) < max_length:
+        if should_use_select:
             select.select([sock], [], [])
-            rcvd = sock.recv(max_length, socket.MSG_PEEK)
-            if not rcvd:
-                break
-            index = rcvd.find(delim)
-            if index == -1:
-                data.extend(sock.recv(max_length - len(data)))
-            else:
-                data.extend(sock.recv(index + len(delim)))
-                break
-    else:
-        while len(data) < max_length and not data.endswith(delim):
-            rcvd = sock.recv(1)
-            data.extend(rcvd)
-            if not rcvd:
-                break
+        else:
+            sock.wait_until_readable()
+        rcvd = sock.recv(max_length, socket.MSG_PEEK)
+        if not rcvd:
+            break
+        index = rcvd.find(delim)
+        if index == -1:
+            data.extend(sock.recv(max_length - len(data)))
+        else:
+            data.extend(sock.recv(index + len(delim)))
+            break
 
     return bytes(data)
 

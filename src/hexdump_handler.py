@@ -1,6 +1,7 @@
 import re
 import socket
 import ssl
+import utils
 
 handled_ports = '*'
 
@@ -12,9 +13,7 @@ def main(sock, dport, logger, config):
 
     if using_ssl:
         try:
-            ssl_sock = ssl.wrap_socket(
-                sock, config['tls.keyfile'], config['tls.certfile'], True
-            )
+            ssl_sock = utils.ssl_wrap(sock, config['tls.keyfile'], config['tls.certfile'])
             data = ssl_sock.recv(2048)
         except ssl.SSLError:
             using_ssl = False

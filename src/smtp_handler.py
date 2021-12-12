@@ -1,5 +1,4 @@
 import re
-import ssl
 import utils
 
 handled_ports = [25, 587]
@@ -144,9 +143,7 @@ def main(sock, dport, logger, config):
             data.clear()
 
             sock.send(b'220 Ready to start TLS\r\n')
-            sock = ssl.wrap_socket(
-                sock, config['tls.keyfile'], config['tls.certfile'], True
-            )
+            sock = utils.ssl_wrap(sock, config['tls.keyfile'], config['tls.certfile'])
 
         else:
             sock.send(b'502 Command not implemented\r\n')

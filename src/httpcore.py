@@ -296,9 +296,7 @@ class TemplateResponse(Response):
             }
         )
         if not self.headers.get('Content-Type'):
-            self.headers['Content-Type'] = guess_mimetype(
-                '.'.join(self.path.split('.')[:-1])
-            )
+            self.headers['Content-Type'] = guess_mimetype(self.path)
 
     def send(self, socket, request):
         self._render(request)

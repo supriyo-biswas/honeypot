@@ -139,12 +139,12 @@ class ShellLogger:
 
                 self._recvbuf.clear()
             else:
-                for line in lines[:-1]:
+                for i in range(1, len(lines) - 1):
                     self._logger.log(
                         ip=self._ip,
                         dport=self._dport,
                         username=self._user,
-                        cmd=line.decode('latin-1'),
+                        cmd=lines[i].decode('latin-1'),
                     )
 
                 self._recvbuf.clear()
@@ -227,7 +227,6 @@ def readline(sock, delim=b'\n', max_length=2048):
             rcvd = sock.recv(max_length, socket.MSG_PEEK)
             if not rcvd:
                 break
-
             index = rcvd.find(delim)
             if index == -1:
                 data.extend(sock.recv(max_length - len(data)))

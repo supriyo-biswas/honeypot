@@ -284,7 +284,7 @@ class TemplateResponse(Response):
 
     def _render(self, request):
         with open(self.path) as f:
-            template = re.sub(r'\s*(\{\{|\}\})|(\{%|%\})\s*', r'\1\2', f.read())
+            template = re.sub(r'\s*(\{\{|\}\}|\{%|%\})\s*', r'\1', f.read())
 
         self.body = Template(template).render(
             {

@@ -1,0 +1,7 @@
+{{ response.set_header('Content-Type', 'application/json') }}
+{% set query = request.query.query %}
+{% if query == ['prometheus_build_info'] %}
+{"status":"success","data":{"resultType":"vector","result":[{"metric":{"__name__":"prometheus_build_info","branch":"HEAD","goversion":"go1.16.4","instance":"{{ request.headers.host.split(':')[0] }}:9090","job":"prometheus","revision":"24c9b61221f7006e87cd62b9fe2901d43e19ed53","version":"2.27.0"},"value":[1639307830.301,"1"]}]}}
+{% else %}
+{"status":"error","errorType":"bad_data","error":"invalid parameter \"query\": 1:1: parse error: no expression found in input"}
+{% endif %}

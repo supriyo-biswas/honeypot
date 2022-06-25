@@ -20,6 +20,14 @@
         path: /etc/docker
         state: directory
 
+    - name: Create /data directory
+      file:
+        path: /data
+        state: directory
+        mode: 0755
+        owner: root
+        group: root
+
     - name: Copy docker daemon configuration
       copy:
         src: files/daemon.json

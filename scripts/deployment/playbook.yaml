@@ -3,7 +3,7 @@
 
   tasks:
     - name: Remove unneeded packages
-      apt:
+      ansible.builtin.apt:
         name:
           - snapd
           - landscape-common
@@ -11,40 +11,41 @@
         autoremove: yes
 
     - name: Update installed packages
-      apt:
+      ansible.builtin.apt:
         upgrade: safe
         update_cache: yes
 
     - name: Create /etc/docker directory
-      file:
+      ansible.builtin.file:
         path: /etc/docker
         state: directory
 
     - name: Copy docker daemon configuration
-      copy:
+      ansible.builtin.copy:
         src: files/daemon.json
         dest: /etc/docker/daemon.json
 
     - name: Install honeypot service
-      copy:
+      ansible.builtin.copy:
         src: files/honeypot.service
         dest: /etc/systemd/system/honeypot.service
 
     - name: Stop honeypot service
-      systemd:
+      ansible.builtin.systemd:
         name: honeypot
         daemon_reload: yes
         state: stopped
 
     - name: Install dependencies
-      apt:
+      ansible.builtin.apt:
         name:
           - docker.io
           - openssl
           - rsync
+          - sudo
 
     - name: Remove python3.8 installation directory
-      file:
+      ansible.builtin.file:
         dest: /opt/python3
         state: absent
 
@@ -54,7 +55,7 @@
         dest: /tmp/python-3.8.8-linux-x86_64.tar.bz2
 
     - name: Create python3.8 installation directory
-      file:
+      ansible.builtin.file:
         dest: /opt/python3
         state: directory
 
@@ -65,58 +66,58 @@
         remote_src: yes
 
     - name: Remove python3.8 installation directory
-      file:
+      ansible.builtin.file:
         dest: /tmp/python-3.8.8-linux-x86_64.tar.bz2
         state: absent
 
     - name: Set timezone to UTC
-      timezone:
+      community.general.timezone:
         name: Etc/UTC
       register: timezone
 
     - name: Enable memory cgroup in grub config
-      replace:
+      ansible.builtin.replace:
         path: /etc/default/grub
         regexp: '^(GRUB_CMDLINE_LINUX)="(?!.*cgroup_enable=)(.*)"'
         replace: '\1="cgroup_enable=memory swapaccount=1 \2"'
       register: grub_config
 
     - name: Run update-grub
-      command: update-grub
+      ansible.builtin.command: update-grub
       when: grub_config.changed
 
     - name: Reboot for cgroup/timezone changes
-      reboot: {}
+      ansible.builtin.reboot: {}
       when: grub_config.changed or timezone.diff.after != timezone.diff.before
 
     - name: Pull alpine docker image
-      command: docker pull alpine:latest
+      ansible.builtin.command: docker pull alpine:latest
 
     - name: Copy iptables-persistent command
-      copy:
+      ansible.builtin.copy:
         src: files/iptables-persistent
         dest: /usr/local/bin/iptables-persistent
         mode: u=rwx,g=rx,o=rx
 
     - name: Copy iptables-persistent service file
-      copy:
+      ansible.builtin.copy:
         src: files/iptables-persistent.service
         dest: /etc/systemd/system/iptables-persistent.service
         mode: u=rwx,g=rx,o=rx
 
     - name: Enable iptables-persistent service
-      systemd:
+      ansible.builtin.systemd:
         name: iptables-persistent
         daemon_reload: yes
         enabled: yes
 
     - name: Start iptables-persistent service
-      systemd:
+      ansible.builtin.systemd:
         name: iptables-persistent
         state: started
 
     - name: Create honeypot user
-      user:
+      ansible.builtin.user:
         name: honeypot
         home: /opt/honeypot
         shell: /bin/false
@@ -124,7 +125,7 @@
         system: yes
 
     - name: Add honeypot user to docker group
-      user:
+      ansible.builtin.user:
         name: honeypot
         append: yes
         groups:
@@ -132,19 +133,19 @@
           - docker
 
     - name: Copy html directory
-      synchronize:
+      ansible.builtin.synchronize:
         src: files/html
         dest: /opt/honeypot/data
         recursive: yes
         delete: yes
 
     - name: Create settings file
-      template:
+      ansible.builtin.template:
         src: files/dotenv.j2
         dest: /opt/honeypot/data/html/.env
 
     - name: Create logs directory
-      file:
+      ansible.builtin.file:
         dest: /opt/honeypot/data/logs
         state: directory
         owner: honeypot
@@ -152,27 +153,27 @@
         mode: u=rwX,g=rX,o=rX
 
     - name: Create SSH keys directory
-      file:
+      ansible.builtin.file:
         dest: /opt/honeypot/data/ssh
         state: directory
 
     - name: Create RSA SSH key
-      shell: ssh-keygen -t rsa -f /opt/honeypot/data/ssh/host_rsa -N ''
+      ansible.builtin.shell: ssh-keygen -t rsa -f /opt/honeypot/data/ssh/host_rsa -N ''
       args:
         creates: /opt/honeypot/data/ssh/host_rsa
 
     - name: Create ECDSA SSH key
-      shell: ssh-keygen -t ecdsa -f /opt/honeypot/data/ssh/host_ecdsa -N ''
+      ansible.builtin.shell: ssh-keygen -t ecdsa -f /opt/honeypot/data/ssh/host_ecdsa -N ''
       args:
         creates: /opt/honeypot/data/ssh/host_ecdsa
 
     - name: Create Ed25519 SSH key
-      shell: ssh-keygen -t ed25519 -f /opt/honeypot/data/ssh/host_ed25519 -N ''
+      ansible.builtin.shell: ssh-keygen -t ed25519 -f /opt/honeypot/data/ssh/host_ed25519 -N ''
       args:
         creates: /opt/honeypot/data/ssh/host_ed25519
 
     - name: Set permissions on SSH key files
-      file:
+      ansible.builtin.file:
         path: /opt/honeypot/data/ssh
         owner: honeypot
         group: honeypot
@@ -180,7 +181,7 @@
         recurse: yes
 
     - name: Stop routing requests to honeypot
-      iptables:
+      ansible.builtin.iptables:
         state: absent
         action: insert
         table: nat
@@ -191,7 +192,7 @@
         to_destination: ":3000"
 
     - name: Create certificate directory
-      file:
+      ansible.builtin.file:
         dest: /opt/honeypot/data/certs
         state: directory
 
@@ -201,7 +202,7 @@
       register: cert_file
 
     - name: Find the notafter of the certificate
-      shell: >-
+      ansible.builtin.shell: >-
         date +%s --date "$(
           openssl x509 -enddate -noout -in /opt/honeypot/data/certs/cert.pem |
           cut -d= -f2
@@ -220,13 +221,13 @@
         use_letsencrypt: "{{ letsencrypt_email_address is defined }}"
 
     - name: Install certbot
-      apt:
+      ansible.builtin.apt:
         name:
           - certbot
       when: use_letsencrypt and should_create_cert
 
     - name: Obtain certificates from certbot
-      command: >-
+      ansible.builtin.command: >-
         certbot certonly --standalone --non-interactive --agree-tos
         --email {{ letsencrypt_email_address }}
         --domain {{ ansible_host }}
@@ -235,33 +236,49 @@
       when: use_letsencrypt and should_create_cert
 
     - name: Copy certbot generated certificate
-      copy:
+      ansible.builtin.copy:
         src: /etc/letsencrypt/live/{{ ansible_host }}/fullchain.pem
         dest: /opt/honeypot/data/certs/cert.pem
         remote_src: yes
       when: use_letsencrypt and should_create_cert
 
     - name: Copy certbot generated private key
-      copy:
+      ansible.builtin.copy:
         src: /etc/letsencrypt/live/{{ ansible_host }}/privkey.pem
         dest: /opt/honeypot/data/certs/key.pem
         remote_src: yes
       when: use_letsencrypt and should_create_cert
 
+    - name: Copy certificate renewal script
+      ansible.builtin.copy:
+        src: files/renew-honeypot-certs.sh
+        dest: /opt/honeypot/renew-honeypot-certs.sh
+        mode: u=rwx,g=rx,o=rx
+      when: use_letsencrypt
+
+    - name: Create a cronjob for certificate renewal using letsencrypt
+      ansible.builtin.cron:
+        name: honeypot renew certs
+        minute: '48'
+        hour: '09'
+        job: /opt/honeypot/renew-honeypot-certs.sh
+      become: true
+      when: use_letsencrypt
+
     - name: Remove generated private key if it is expiring
-      file:
+      ansible.builtin.file:
         path: /opt/honeypot/data/certs/key.pem
         state: absent
       when: should_create_cert and not use_letsencrypt
 
     - name: Remove generated certificate if it is expiring
-      file:
+      ansible.builtin.file:
         path: /opt/honeypot/data/certs/cert.pem
         state: absent
       when: should_create_cert and not use_letsencrypt
 
     - name: Generate certificates using OpenSSL
-      command: >-
+      ansible.builtin.command: >-
         openssl req -x509 -newkey rsa:2048 -days 365 -nodes
         -subj '/CN={{ ansible_host }}'
         -keyout /opt/honeypot/data/certs/key.pem
@@ -271,7 +288,7 @@
       when: should_create_cert and not use_letsencrypt
 
     - name: Set permissions on certificates
-      file:
+      ansible.builtin.file:
         path: /opt/honeypot/data/certs
         owner: honeypot
         group: honeypot
@@ -279,52 +296,52 @@
         recurse: yes
 
     - name: Create source directory
-      file:
+      ansible.builtin.file:
         dest: /opt/honeypot/src
         state: directory
 
     - name: Copy source files
-      copy:
+      ansible.builtin.copy:
         src: "{{ item }}"
         dest: /opt/honeypot/src
       with_fileglob:
         - ../../src/*.py
 
     - name: Copy requirements.txt
-      copy:
+      ansible.builtin.copy:
         src: ../../requirements.txt
         dest: /opt/honeypot/requirements.txt
       register: requirements
 
     - name: Remove old virtualenv
-      file:
+      ansible.builtin.file:
         path: /opt/honeypot/venv
         state: absent
 
     - name: Create new virtualenv
-      command: /opt/python3/bin/python3 -mvenv /opt/honeypot/venv
+      ansible.builtin.command: /opt/python3/bin/python3 -mvenv /opt/honeypot/venv
 
     - name: Install python dependencies
-      command: /opt/honeypot/venv/bin/pip install -r /opt/honeypot/requirements.txt
+      ansible.builtin.command: /opt/honeypot/venv/bin/pip install -r /opt/honeypot/requirements.txt
 
     - name: Copy honeypot configuration
-      copy:
+      ansible.builtin.copy:
         src: files/config.json
         dest: /opt/honeypot/data/config.json
 
     - name: Enable honeypot service
-      systemd:
+      ansible.builtin.systemd:
         name: honeypot
         daemon_reload: yes
         enabled: yes
 
     - name: Start honeypot service
-      systemd:
+      ansible.builtin.systemd:
         name: honeypot
         state: started
 
     - name: Route requests to honeypot
-      iptables:
+      ansible.builtin.iptables:
         state: present
         action: insert
         table: nat

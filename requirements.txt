@@ -1,6 +1,6 @@
 bcrypt==3.2.0
 cffi==1.14.5
-cryptography==41.0.3
+cryptography==41.0.6
 Jinja2==2.11.3
 MarkupSafe==1.1.1
 multidict==5.1.0
